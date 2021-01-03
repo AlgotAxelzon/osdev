@@ -1,45 +1,58 @@
-# $@ = target file
-# $< = first dependency
-# $^ = all dependencies
+SOURCEDIR = .
+BUILDDIR = $(SOURCEDIR)/build
 
-CC = wsl /usr/local/i386elfgcc/bin/i386-elf-gcc
-LD = wsl /usr/local/i386elfgcc/bin/i386-elf-ld
+# Compilers
+ifneq (,$(findstring /cygdrive/,$(PATH)))
+    CC = wsl /usr/local/i386elfgcc/bin/i386-elf-gcc
+    LD = wsl /usr/local/i386elfgcc/bin/i386-elf-ld
+else
+   	CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
+	LD = /usr/local/i386elfgcc/bin/i386-elf-ld 
+endif
+
 AS = nasm
 QEMU = qemu-system-i386
 
-QEMU_DIR = "C:\Program Files\qemu"
+QEMU_DIR = "C:/'Program Files'/qemu"
 
 export Path:=$(QEMU_DIR);$(Path)
 
-# First rule is the one executed when no parameters are fed to the Makefile
-all: run
+TARGET = $(BUILDDIR)/os-image.bin
 
-# Notice how dependencies are built as needed
-kernel.bin: kernel_entry.o kernel.o
-	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary
+C_SOURCES = $(wildcard $(SOURCEDIR)/kernel/*.c) $(wildcard $(SOURCEDIR)/drivers/*.c)
+HEADERS = $(wildcard $(SOURCEDIR)/drivers/*.h)
 
-kernel_entry.o: kernel_entry.asm
-	$(AS) $< -f elf -o $@
+OBJ = $(patsubst $(SOURCEDIR)/%.c, $(BUILDDIR)/%.o, $(C_SOURCES))
 
-kernel.o: kernel.c
-	$(CC) -ffreestanding -c $< -o $@
+BOOT_DEPS = $(wildcard boot/*.asm)
 
-# Rule to disassemble the kernel - may be useful to debug
-os-image.dis: os-image.bin
-	ndisasm -b 32 $< > $@
+clean:
+	rm -r $(BUILDDIR)
 
-kernel.dis: kernel.bin
-	ndisasm -b 32 $< > $@
+all: $(TARGET)
+	$(info $$C_SOURCES is [${C_SOURCES}])
+	$(info $$OBJ is [${OBJ}])
 
-boot_sect.bin: boot_sect.asm
-	$(AS) $< -f bin -o $@
+run: all
+	$(QEMU) -drive format=raw,file=$(TARGET)
 
-os-image.bin: boot_sect.bin kernel.bin
+$(TARGET): $(BUILDDIR)/boot/boot_sect.bin $(BUILDDIR)/kernel/kernel.bin
 	cat $^ > $@
 	dd if=/dev/zero bs=1 count=2048 >> $@
 
-run: os-image.bin
-	$(QEMU) -drive format=raw,file=$<
+$(BUILDDIR)/boot/boot_sect.bin: $(SOURCEDIR)/boot/boot_sect.asm dir $(BOOT_DEPS)
+	$(AS) $< -f bin -o $@
 
-clean:
-	rm *.bin *.o *.dis
+dir:
+	mkdir -p $(BUILDDIR)/boot
+	mkdir -p $(BUILDDIR)/drivers
+	mkdir -p $(BUILDDIR)/kernel
+
+$(BUILDDIR)/kernel/kernel.bin: $(BUILDDIR)/kernel/kernel_entry.o $(OBJ)
+	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary
+
+$(BUILDDIR)/kernel/kernel_entry.o: $(SOURCEDIR)/kernel/kernel_entry.asm
+	$(AS) $< -f elf -o $@
+
+$(BUILDDIR)/%.o : $(SOURCEDIR)/%.c ${HEADERS}
+	$(CC) -ffreestanding -c $< -o $@
