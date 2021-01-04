@@ -3,10 +3,10 @@ BUILDDIR = $(SOURCEDIR)/build
 
 # Compilers
 ifneq (,$(findstring /cygdrive/,$(PATH)))
-    CC = wsl /usr/local/i386elfgcc/bin/i386-elf-gcc
-    LD = wsl /usr/local/i386elfgcc/bin/i386-elf-ld
+	CC = wsl /usr/local/i386elfgcc/bin/i386-elf-gcc
+	LD = wsl /usr/local/i386elfgcc/bin/i386-elf-ld
 else
-   	CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
+	CC = /usr/local/i386elfgcc/bin/i386-elf-gcc
 	LD = /usr/local/i386elfgcc/bin/i386-elf-ld 
 endif
 

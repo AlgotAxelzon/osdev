@@ -3,6 +3,10 @@
 
 void clear_screen();
 
-void print_string(int row, int col, char* string_ptr, char attribute);
+void print(char* string);
+
+void set_cursor(int offset);
+
+unsigned int get_cursor();
 
 #endif
