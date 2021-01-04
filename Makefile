@@ -38,7 +38,7 @@ run: all
 
 $(TARGET): $(BUILDDIR)/boot/boot_sect.bin $(BUILDDIR)/kernel/kernel.bin
 	cat $^ > $@
-	dd if=/dev/zero bs=1 count=2048 >> $@
+	dd if=/dev/zero bs=1 count=4096 >> $@
 
 $(BUILDDIR)/boot/boot_sect.bin: $(SOURCEDIR)/boot/boot_sect.asm dir $(BOOT_DEPS)
 	$(AS) $< -f bin -o $@

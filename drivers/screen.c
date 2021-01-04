@@ -1,4 +1,5 @@
 #include "../drivers/screen.h"
+#include "../kernel/utils.h"
 #include "../kernel/low_level.h"
 
 #define VIDEO_MEM_ADDR 0xb7fff
@@ -32,6 +33,26 @@ int get_screen_offset(int row, int col)
     return (row*MAX_COLS+col)*2;
 }
 
+void scroll_check()
+{
+    int cur_offset = get_cursor();
+    int max_offset = get_screen_offset(MAX_ROWS-1, MAX_COLS-1);
+    if (cur_offset > max_offset)
+    {
+        // Copy rows
+        int row_copy_to;
+        for (row_copy_to = 0; row_copy_to < MAX_ROWS; row_copy_to++)
+        {
+            mem_copy((char*) VIDEO_MEM_ADDR + MAX_COLS*row_copy_to*2,
+                     (char*) VIDEO_MEM_ADDR + MAX_COLS*(row_copy_to+1)*2,
+                     MAX_COLS*2);
+        }
+
+        // Set cursor to last row
+        set_cursor(get_screen_offset(MAX_ROWS-1, 0));
+    }
+}
+
 void print_char(int row, int col, char c, char attribute)
 {
     int offset = get_screen_offset(row, col);
@@ -54,6 +75,7 @@ void print_char(int row, int col, char c, char attribute)
         vidmem[offset + 1] = c;
     }
     set_cursor(offset + 2);
+    scroll_check();
 }
 
 void print_string(int row, int col, char* string_ptr, char attribute)

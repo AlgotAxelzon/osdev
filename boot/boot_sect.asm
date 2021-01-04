@@ -30,7 +30,7 @@ load_kernel:
     call print_string           ; being loaded
 
     mov bx, KERNEL_OFFSET       ; Load 15 sectors (the kernel code) 
-    mov dh, 2                   ; to KERNEL_OFFSET in memory
+    mov dh, 7                   ; to KERNEL_OFFSET in memory
     mov dl, [BOOT_DRIVE]
     call disk_load
 
