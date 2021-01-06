@@ -20,18 +20,19 @@ export Path:=$(QEMU_DIR);$(Path)
 TARGET = $(BUILDDIR)/os-image.bin
 
 C_SOURCES = $(wildcard $(SOURCEDIR)/kernel/*.c) $(wildcard $(SOURCEDIR)/drivers/*.c)
-HEADERS = $(wildcard $(SOURCEDIR)/drivers/*.h)
+HEADERS = $(wildcard $(SOURCEDIR)/drivers/*.h) $(wildcard $(SOURCEDIR)/kernel/*.h)
 
 OBJ = $(patsubst $(SOURCEDIR)/%.c, $(BUILDDIR)/%.o, $(C_SOURCES))
 
 BOOT_DEPS = $(wildcard boot/*.asm)
 
+.PHONY: clean all run dir
 clean:
 	rm -r $(BUILDDIR)
 
-all: $(TARGET)
-	$(info $$C_SOURCES is [${C_SOURCES}])
-	$(info $$OBJ is [${OBJ}])
+all: dir $(TARGET)
+#	$(info $$C_SOURCES is [${C_SOURCES}])
+#	$(info $$OBJ is [${OBJ}])
 
 run: all
 	$(QEMU) -drive format=raw,file=$(TARGET)
@@ -40,7 +41,7 @@ $(TARGET): $(BUILDDIR)/boot/boot_sect.bin $(BUILDDIR)/kernel/kernel.bin
 	cat $^ > $@
 	dd if=/dev/zero bs=1 count=4096 >> $@
 
-$(BUILDDIR)/boot/boot_sect.bin: $(SOURCEDIR)/boot/boot_sect.asm dir $(BOOT_DEPS)
+$(BUILDDIR)/boot/boot_sect.bin: $(SOURCEDIR)/boot/boot_sect.asm $(BOOT_DEPS)
 	$(AS) $< -f bin -o $@
 
 dir:
@@ -51,8 +52,12 @@ dir:
 $(BUILDDIR)/kernel/kernel.bin: $(BUILDDIR)/kernel/kernel_entry.o $(OBJ)
 	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary
 
-$(BUILDDIR)/kernel/kernel_entry.o: $(SOURCEDIR)/kernel/kernel_entry.asm
+$(BUILDDIR)/kernel/kernel_entry.o: $(SOURCEDIR)/kernel/kernel_entry.asm $(BUILDDIR)/kernel/irq_handlers.o $(BUILDDIR)/kernel/idt.o
 	$(AS) $< -f elf -o $@
 
 $(BUILDDIR)/%.o : $(SOURCEDIR)/%.c ${HEADERS}
 	$(CC) -ffreestanding -c $< -o $@
+
+# Disassemble os-image.bin
+$(BUILDDIR)/os-image.dis: $(BUILDDIR)/os-image.bin
+	ndisasm -b 32 $< > $@
