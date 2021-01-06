@@ -6,4 +6,4 @@ call idt_init
 call _start
 jmp $ 
 
-%include "kernel/irq_caller.asm"
+%include "entry/irq_caller.asm"

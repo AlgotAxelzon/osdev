@@ -1,5 +1,5 @@
 #include "../kernel/pic.h"
-#include "../kernel/idt.h"
+#include "../entry/idt.h"
 
 #define PIC1_OFFSET 0x20
 #define PIC2_OFFSET 0x28

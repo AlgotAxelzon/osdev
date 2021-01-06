@@ -19,8 +19,8 @@ export Path:=$(QEMU_DIR);$(Path)
 
 TARGET = $(BUILDDIR)/os-image.bin
 
-C_SOURCES = $(wildcard $(SOURCEDIR)/kernel/*.c) $(wildcard $(SOURCEDIR)/drivers/*.c)
-HEADERS = $(wildcard $(SOURCEDIR)/drivers/*.h) $(wildcard $(SOURCEDIR)/kernel/*.h)
+C_SOURCES = $(wildcard $(SOURCEDIR)/kernel/*.c) $(wildcard $(SOURCEDIR)/drivers/*.c) $(wildcard $(SOURCEDIR)/entry/*.c)
+HEADERS = $(wildcard $(SOURCEDIR)/drivers/*.h) $(wildcard $(SOURCEDIR)/kernel/*.h) $(wildcard $(SOURCEDIR)/entry/*.h)  
 
 OBJ = $(patsubst $(SOURCEDIR)/%.c, $(BUILDDIR)/%.o, $(C_SOURCES))
 
@@ -48,11 +48,12 @@ dir:
 	mkdir -p $(BUILDDIR)/boot
 	mkdir -p $(BUILDDIR)/drivers
 	mkdir -p $(BUILDDIR)/kernel
+	mkdir -p $(BUILDDIR)/entry
 
-$(BUILDDIR)/kernel/kernel.bin: $(BUILDDIR)/kernel/kernel_entry.o $(OBJ)
+$(BUILDDIR)/kernel/kernel.bin: $(BUILDDIR)/entry/kernel_entry.o $(OBJ)
 	$(LD) -o $@ -Ttext 0x1000 $^ --oformat binary
 
-$(BUILDDIR)/kernel/kernel_entry.o: $(SOURCEDIR)/kernel/kernel_entry.asm $(BUILDDIR)/kernel/irq_handlers.o $(BUILDDIR)/kernel/idt.o
+$(BUILDDIR)/entry/kernel_entry.o: $(SOURCEDIR)/entry/kernel_entry.asm $(BUILDDIR)/kernel/irq.o $(BUILDDIR)/entry/idt.o
 	$(AS) $< -f elf -o $@
 
 $(BUILDDIR)/%.o : $(SOURCEDIR)/%.c ${HEADERS}
